@@ -1,0 +1,325 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FruitFly Brain Runner</title>
+<style>
+:root{
+  --bg:#ffffff;--panel:#ffffff;--panel-b:rgba(15,23,42,.10);
+  --text:#0f172a;--muted:#64748b;--teal:#0fb99a;--amber:#f59e0b;--violet:#7c5cff;--red:#ef4466;
+  --radius:14px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{
+  color:var(--text);background:var(--bg);overflow:hidden;
+  font:14px/1.45 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  display:flex;
+}
+/* ---------- left sidebar ---------- */
+.side{width:320px;flex:none;height:100%;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:14px;
+  border-right:1px solid var(--panel-b);background:#fff}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;font-size:21px;flex:none;
+  background:linear-gradient(135deg,var(--teal),var(--violet));box-shadow:0 6px 20px rgba(15,185,154,.25)}
+h1{margin:0;font-size:18px;font-weight:700;letter-spacing:-.02em;line-height:1.2}
+h1 small{display:block;font-size:11.5px;font-weight:500;color:var(--muted);letter-spacing:0;margin-top:2px}
+.sec{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.09em;margin:2px 0 -4px}
+.card{background:var(--panel);border:1px solid var(--panel-b);border-radius:var(--radius);
+  box-shadow:0 1px 2px rgba(15,23,42,.04),0 6px 18px rgba(15,23,42,.04)}
+input{width:100%;background:#f8fafc;color:var(--text);border:1px solid var(--panel-b);
+  border-radius:10px;padding:10px 12px;font:inherit;outline:none;transition:border-color .15s,box-shadow .15s}
+input:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(15,185,154,.18)}
+input::placeholder{color:#94a3b8}
+button{font:inherit;font-weight:600;color:var(--text);background:#f1f5f9;border:1px solid var(--panel-b);
+  border-radius:10px;padding:10px 14px;cursor:pointer;transition:transform .1s,background .15s,border-color .15s,box-shadow .15s}
+button:hover{background:#e2e8f0;border-color:rgba(15,23,42,.2)}
+button:active{transform:scale(.97)}
+button.primary{background:linear-gradient(135deg,var(--teal),#19b8d6);color:#04201b;border:0;box-shadow:0 6px 18px rgba(15,185,154,.28)}
+button.primary:hover{filter:brightness(1.06);background:linear-gradient(135deg,var(--teal),#19b8d6)}
+button.on{background:linear-gradient(135deg,var(--violet),#6f8cff);color:#fff;border:0;box-shadow:0 6px 18px rgba(124,92,255,.3)}
+button.on:hover{background:linear-gradient(135deg,var(--violet),#6f8cff);filter:brightness(1.06)}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.btns .wide{grid-column:1/-1}
+#status{display:flex;align-items:flex-start;gap:8px;padding:9px 12px;border-radius:12px;font-size:12px;font-weight:600;
+  background:#f1f5f9;border:1px solid var(--panel-b);word-break:break-word}
+#status::before{content:"";width:8px;height:8px;border-radius:50%;background:currentColor;flex:none;margin-top:5px}
+.ok{color:var(--teal)}.ok::before{box-shadow:0 0 10px currentColor}
+.bad{color:var(--red)}.wait{color:var(--amber)}.wait::before{animation:pulse 1s infinite}
+@keyframes pulse{50%{opacity:.25}}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{padding:11px 13px}
+.stat.full{grid-column:1/-1}
+.stat span.l{display:block;font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.stat b{display:block;font-size:22px;font-weight:700;margin-top:1px;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.stat.small b{font-size:17px;padding-top:2px}
+.stat b small{font-size:13px;color:var(--muted);font-weight:500}
+.legend{display:flex;flex-direction:column;gap:7px;font-size:12px;color:var(--muted);padding:12px 14px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:8px;vertical-align:-1px}
+.tip{font-size:11.5px;color:var(--muted);margin-top:auto}
+/* ---------- main (full-screen game) ---------- */
+.main{flex:1;min-width:0;height:100%;display:flex;flex-direction:column}
+.gwrap{position:relative;flex:1;min-height:0;background:#fff}
+.bwrap{position:relative;height:27%;min-height:140px;max-height:260px;border-top:1px solid var(--panel-b);background:#fff}
+canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.hint{position:absolute;left:14px;top:12px;font-size:11px;color:var(--muted);background:rgba(255,255,255,.85);
+  padding:4px 10px;border-radius:999px;border:1px solid var(--panel-b);pointer-events:none}
+@media(max-width:760px){
+  body{flex-direction:column;overflow:auto;height:auto;min-height:100%}
+  .side{width:100%;height:auto;border-right:0;border-bottom:1px solid var(--panel-b)}
+  .main{height:85vh;flex:none}
+}
+</style></head><body>
+
+<aside class="side">
+  <div class="brand"><div class="logo">🪰</div>
+    <h1>FruitFly Brain Runner<small>Connectome simulation running in Google Colab</small></h1></div>
+
+  <div id="status" class="wait">Not connected · manual play</div>
+
+  <div class="sec">Connection</div>
+  <input id="url" placeholder="Paste Colab API URL (https://xxxx.trycloudflare.com)" autocomplete="off" spellcheck="false">
+  <div class="btns">
+    <button id="connect" class="primary wide">Connect</button>
+    <button id="mode">Mode: MANUAL</button>
+    <button id="rst">Reset stats</button>
+    <button id="fs" class="wide">⛶ Fullscreen</button>
+  </div>
+
+  <div class="sec">Parameters</div>
+  <div class="stats">
+    <div class="card stat"><span class="l">Passed</span><b id="passed">0</b></div>
+    <div class="card stat"><span class="l">Crashes</span><b id="crashes">0</b></div>
+    <div class="card stat"><span class="l">Danger</span><b id="danger">0</b></div>
+    <div class="card stat"><span class="l">GF spikes</span><b id="gf">0</b></div>
+    <div class="card stat full"><span class="l">Active neurons</span><b><span id="act">0</span> <small>/ <span id="tot">0</span></small></b></div>
+    <div class="card stat small"><span class="l">API round-trip</span><b id="rtt">-</b></div>
+    <div class="card stat small"><span class="l">Game speed</span><b id="fps">-</b></div>
+  </div>
+
+  <div class="sec">Legend</div>
+  <div class="card legend">
+    <span><i style="background:var(--amber)"></i>danger signal</span>
+    <span><i style="background:var(--teal)"></i>giant-fiber spikes</span>
+    <span><i style="background:var(--red)"></i>jump</span>
+    <span><i style="background:var(--violet)"></i>visual neurons (LC4 / LPLC2)</span>
+  </div>
+  <div class="tip">Manual mode: press Space or click the game to jump.</div>
+</aside>
+
+<main class="main">
+  <div class="gwrap" id="gwrap"><canvas id="game"></canvas><div class="hint">Space or click to jump (manual mode)</div></div>
+  <div class="bwrap" id="bwrap"><canvas id="brain"></canvas></div>
+</main>
+
+<script>
+// ===GAME===
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const KINDS=[ // w = width, h = height (player must be above h while overlapping)
+  {k:"spike",w:8,h:5},{k:"spike",w:18,h:5},{k:"spike",w:28,h:5},
+  {k:"block",w:20,h:20},{k:"pit",w:24,h:0.1},{k:"combo",w:32,h:18}];
+function makeGame(seed=7){
+  const rnd=mulberry32(seed);
+  const G={y:0,vy:0,obs:[],passed:0,crashes:0};
+  G.spawn=(x)=>{const t=KINDS[Math.floor(rnd()*KINDS.length)];G.obs.push({x,w:t.w,h:t.h,k:t.k})};
+  G.restart=()=>{G.y=0;G.vy=0;G.obs=[];let x=170;for(let i=0;i<4;i++){G.spawn(x);x+=150+rnd()*110}};
+  // distance from player's front edge to the leading edge of the nearest hazard not yet passed
+  G.nearest=()=>{let b=null;for(const o of G.obs){if(o.x+o.w>-5){const d=o.x-5;if(b===null||d<b)b=d}}return b};
+  G.onGround=()=>G.y<=0;
+  G.jump=()=>{if(G.onGround())G.vy=12};
+  G.step=()=>{
+    G.y+=G.vy; if(G.y>0)G.vy-=1; else{G.y=0;G.vy=0}
+    for(const o of G.obs)o.x-=3;
+    for(const o of G.obs) if(o.x<5&&o.x+o.w>-5&&G.y<o.h){G.crashes++;G.restart();return true}
+    const n0=G.obs.length; G.obs=G.obs.filter(o=>o.x+o.w>-12); G.passed+=n0-G.obs.length;
+    let last=Math.max(...G.obs.map(o=>o.x+o.w),0); while(last<650){last+=150+rnd()*110;G.spawn(last)}
+    return false;
+  };
+  G.restart(); return G;
+}
+const api={base:"",async post(path,body){
+  const r=await fetch(this.base+path,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body||{})});
+  if(!r.ok)throw new Error("HTTP "+r.status);return r.json()},
+  async get(path){const r=await fetch(this.base+path);if(!r.ok)throw new Error("HTTP "+r.status);return r.json()}};
+// run `frames` lock-step frames with the remote brain (used by the page loop and by the headless test)
+async function brainFrame(game){
+  const r=await api.post("/frame",{dist:game.nearest(),on_ground:game.onGround()});
+  if(r.jump)game.jump();
+  const crashed=game.step(); if(crashed)await api.post("/reset",{});
+  return {r,crashed};
+}
+// ===END GAME===
+
+if(typeof document!=="undefined"){
+  const $=id=>document.getElementById(id);
+  const dpr=Math.min(window.devicePixelRatio||1,2);
+  const gc=$("game").getContext("2d"), bc=$("brain").getContext("2d");
+  let GROUND=250;
+  const D={g:{LW:820,LH:300},b:{LW:820,LH:170}};   // logical size; scale is capped so objects stay medium-sized
+  function fit(canvas,wrap,maxS,minH,ctx,d){
+    const r=wrap.getBoundingClientRect(),w=Math.max(100,r.width),h=Math.max(80,r.height);
+    canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);
+    const s=Math.min(maxS,h/minH);ctx.setTransform(dpr*s,0,0,dpr*s,0,0);d.LW=w/s;d.LH=h/s}
+  function fitAll(){fit($("game"),$("gwrap"),1.1,340,gc,D.g);GROUND=Math.round(D.g.LH*.8);fit($("brain"),$("bwrap"),1,170,bc,D.b)}
+  new ResizeObserver(fitAll).observe($("gwrap"));new ResizeObserver(fitAll).observe($("bwrap"));
+  addEventListener("resize",fitAll);fitAll();
+
+  const game=makeGame();
+  let manual=true, connected=false, types=[], pos=[], last={spk:[],danger:0,gf_spikes:0,active:0,jump:false};
+  let histD=[],histG=[],histJ=[], tFrames=0, tStart=performance.now(), running=false;
+  const PX=4,PY=2.5,PLX=120;
+  let scroll=0, rot=0, parts=[], shake=0, wasGround=true, lastCrashes=0;
+  const stars=Array.from({length:90},(_,i)=>{const r=mulberry32(i*31+5);return{x:r()*2400,y:r()*190,s:r()*1.4+.4,v:r()*.3+.1}});
+
+  function setStatus(t,c){$("status").textContent=t;$("status").className=c}
+  function layout(ts){
+    types=ts; pos=ts.map((t,i)=>{const r=mulberry32(i*7919+1),g=()=>(r()+r()+r()-1.5)*1.15;
+      if(t==="DNp01")return[.5+(r()-.5)*.03,.55+r()*.38];
+      if(t==="LC4"||t==="LPLC2"){const s=i%2?1:-1;return[.5+s*(.3+g()*.1),.28+g()*.14]}
+      return[.5+g()*.2,.5+g()*.17]})}
+
+  function rr(c,x,y,w,h,r){c.beginPath();c.roundRect?c.roundRect(x,y,w,h,r):c.rect(x,y,w,h)}
+  function burst(x,y,n,col,spd){for(let i=0;i<n;i++){const a=Math.random()*6.283,s=(Math.random()*.7+.3)*spd;
+    parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-1,life:1,col,r:Math.random()*2.5+1})}}
+  function spike(c,x,w,col){const g=c.createLinearGradient(0,GROUND-30,0,GROUND);g.addColorStop(0,"#ff8aa0");g.addColorStop(1,col);
+    c.fillStyle=g;c.beginPath();c.moveTo(x,GROUND);c.lineTo(x+w/2,GROUND-30);c.lineTo(x+w,GROUND);c.closePath();c.fill()}
+
+  function drawGame(){
+    const c=gc, LW=D.g.LW, LH=D.g.LH; c.save(); c.clearRect(0,0,LW,LH);
+    if(shake>0){c.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);shake*=.88;if(shake<.3)shake=0}
+    // sky
+    c.fillStyle="#ffffff";c.fillRect(-20,-20,LW+40,LH+40);
+    for(const s of stars){const x=((s.x-scroll*s.v*.25)%LW+LW)%LW;c.globalAlpha=.25+s.s*.15;c.fillStyle="#94a3b8";c.fillRect(x,s.y*GROUND/250,s.s,s.s)}
+    c.globalAlpha=1;
+    // distant hills
+    c.fillStyle="rgba(124,92,255,.07)";c.beginPath();c.moveTo(0,GROUND);
+    for(let x=0;x<=LW+20;x+=20)c.lineTo(x,GROUND-40-Math.sin((x+scroll*.15)/70)*18-Math.sin((x+scroll*.15)/23)*6);
+    c.lineTo(LW+20,GROUND);c.fill();
+    // ground body
+    const gg=c.createLinearGradient(0,GROUND,0,LH);gg.addColorStop(0,"#eef2f7");gg.addColorStop(1,"#e2e8f0");
+    c.fillStyle=gg;c.fillRect(-20,GROUND,LW+40,LH-GROUND+20);
+    c.strokeStyle="rgba(15,23,42,.07)";c.lineWidth=1;
+    for(let x=-((scroll)%40);x<LW+30;x+=40){c.beginPath();c.moveTo(x,GROUND);c.lineTo(x-24,LH);c.stroke()}
+    // pits cut into the ground
+    for(const o of game.obs){if(o.k!=="pit")continue;const x=PLX+o.x*PX,w=o.w*PX;if(x>LW+30||x+w<-30)continue;
+      const pg=c.createLinearGradient(0,GROUND,0,LH);pg.addColorStop(0,"#b9c3d3");pg.addColorStop(1,"#f3cdd5");
+      c.fillStyle=pg;c.fillRect(x,GROUND,w,LH-GROUND+20);
+      c.shadowColor="#ef4466";c.shadowBlur=8;c.fillStyle="#ef4466";c.fillRect(x-1,GROUND,2,LH-GROUND);c.fillRect(x+w-1,GROUND,2,LH-GROUND);c.shadowBlur=0}
+    // ground edge glow
+    c.shadowColor="#0fb99a";c.shadowBlur=8;c.strokeStyle="#0fb99a";c.lineWidth=2;
+    c.beginPath();c.moveTo(0,GROUND);c.lineTo(LW,GROUND);c.stroke();c.shadowBlur=0;
+    // pit gaps over the glowing line
+    for(const o of game.obs){if(o.k!=="pit")continue;const x=PLX+o.x*PX,w=o.w*PX;if(x>LW+30||x+w<-30)continue;c.fillStyle="#b9c3d3";c.fillRect(x,GROUND-3,w,6)}
+    // obstacles
+    for(const o of game.obs){const x=PLX+o.x*PX,w=o.w*PX; if(x>LW+30||x+w<-30||o.k==="pit")continue;
+      if(o.k==="block"||o.k==="combo"){
+        const bw=o.k==="combo"?16*PX:w,bh=(o.k==="combo"?18:o.h)*PY;
+        const bg=c.createLinearGradient(0,GROUND-bh,0,GROUND);bg.addColorStop(0,"#a594ff");bg.addColorStop(1,"#6a4cf0");
+        c.shadowColor="rgba(124,92,255,.5)";c.shadowBlur=10;c.fillStyle=bg;rr(c,x,GROUND-bh,bw,bh,5);c.fill();c.shadowBlur=0;
+        c.strokeStyle="rgba(255,255,255,.5)";c.lineWidth=1;rr(c,x+.5,GROUND-bh+.5,bw-1,bh-1,5);c.stroke();
+      }
+      c.shadowColor="rgba(239,68,102,.5)";c.shadowBlur=8;
+      if(o.k==="combo")spike(c,x+24*PX,8*PX,"#ff2f55");
+      else if(o.k==="spike"){const n=Math.max(1,Math.round(o.w/9.5)),sw=w/n;for(let i=0;i<n;i++)spike(c,x+i*sw,sw,"#ff2f55")}
+      c.shadowBlur=0}
+    // particles
+    for(let i=parts.length-1;i>=0;i--){const p=parts[i];p.x+=p.vx;p.y+=p.vy;p.vy+=.18;p.life-=.03;
+      if(p.life<=0){parts.splice(i,1);continue}
+      c.globalAlpha=p.life;c.fillStyle=p.col;c.beginPath();c.arc(p.x,p.y,p.r*p.life+.4,0,6.283);c.fill()}
+    c.globalAlpha=1;
+    // player
+    const py=GROUND-game.y*PY, air=game.y>0;
+    if(air)rot+=.14;else{const t=Math.round(rot/(Math.PI/2))*(Math.PI/2);rot+=(t-rot)*.4}
+    c.save();c.translate(PLX,py-20);c.rotate(rot);
+    const col=last.jump?"#f59e0b":"#0fb99a";
+    c.shadowColor=col;c.shadowBlur=14;
+    const pg=c.createLinearGradient(-20,-20,20,20);pg.addColorStop(0,last.jump?"#fcd34d":"#5eead4");pg.addColorStop(1,col);
+    c.fillStyle=pg;rr(c,-20,-20,40,40,9);c.fill();c.shadowBlur=0;
+    c.fillStyle="#06141a";rr(c,2,-8,12,12,4);c.fill();rr(c,-14,-8,12,12,4);c.fill();
+    c.fillStyle="#fff";c.fillRect(8,-5,4,4);c.fillRect(-8,-5,4,4);
+    c.restore();
+    // ground shadow
+    c.fillStyle="rgba(15,23,42,.18)";c.beginPath();c.ellipse(PLX,GROUND+4,20-Math.min(10,game.y*.5),4,0,0,6.283);c.fill();
+    c.restore();
+  }
+
+  function drawBrain(){
+    const c=bc,LW=D.b.LW,H=D.b.LH,W=LW/2-10,on=new Set(last.spk);
+    c.clearRect(0,0,LW,H);
+    c.fillStyle="#ffffff";c.fillRect(0,0,LW,H);
+    // neuron links between active neurons
+    const act=[];for(let i=0;i<pos.length;i++)if(on.has(i))act.push(i);
+    c.lineWidth=.5;c.strokeStyle="rgba(15,185,154,.18)";
+    for(let k=1;k<act.length&&k<25;k++){const a=pos[act[k-1]],b=pos[act[k]];c.beginPath();c.moveTo(a[0]*W,a[1]*H);c.lineTo(b[0]*W,b[1]*H);c.stroke()}
+    for(let i=0;i<pos.length;i++){const t=types[i],hit=on.has(i);
+      const base=t==="DNp01"?"#f59e0b":(t==="LC4"||t==="LPLC2")?"#7c5cff":"#94a3b8";
+      const col=hit?(t==="DNp01"?"#ea580c":"#0fb99a"):base;
+      if(hit){c.shadowColor=col;c.shadowBlur=3}
+      c.globalAlpha=hit?.85:.4;c.fillStyle=col;
+      c.beginPath();c.arc(Math.min(.98,Math.max(.02,pos[i][0]))*W,Math.min(.95,Math.max(.05,pos[i][1]))*H,hit?2.3:1.3,0,6.3);c.fill();c.shadowBlur=0}
+    c.globalAlpha=1;
+    // chart panel
+    const gx=LW/2+16,gw=LW/2-32,n=240,dx=gw/(n-1),top=14,bot=H-12;
+    c.fillStyle="#f1f5f9";rr(c,gx-6,6,gw+12,H-12,10);c.fill();
+    c.strokeStyle="rgba(15,23,42,.08)";c.lineWidth=1;
+    for(let k=0;k<=3;k++){const y=top+(bot-top)*k/3;c.beginPath();c.moveTo(gx,y);c.lineTo(gx+gw,y);c.stroke()}
+    histJ.forEach((j,i)=>{if(j){const x=gx+(n-histJ.length+i)*dx;c.strokeStyle="rgba(239,68,102,.6)";c.beginPath();c.moveTo(x,top-4);c.lineTo(x,bot);c.stroke()}});
+    const line=(a,col,sc)=>{if(!a.length)return;const pts=a.map((v,i)=>[gx+(n-a.length+i)*dx,bot-Math.min(1,v/sc)*(bot-top)]);
+      const f=c.createLinearGradient(0,top,0,bot);f.addColorStop(0,col+"55");f.addColorStop(1,col+"00");
+      c.beginPath();pts.forEach((p,i)=>i?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1]));
+      c.lineTo(pts[pts.length-1][0],bot);c.lineTo(pts[0][0],bot);c.closePath();c.fillStyle=f;c.fill();
+      c.beginPath();pts.forEach((p,i)=>i?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1]));c.strokeStyle=col;c.lineWidth=1.8;c.lineJoin="round";c.stroke()};
+    line(histG,"#0fb99a",Math.max(6,...histG));line(histD,"#f59e0b",1);
+  }
+
+  function ui(){
+    $("passed").textContent=game.passed;$("crashes").textContent=game.crashes;
+    $("danger").textContent=(last.danger||0).toFixed(2);$("gf").textContent=last.gf_spikes||0;$("act").textContent=last.active||0;
+    const og=game.onGround();
+    if(wasGround&&!og)burst(PLX,GROUND,10,"#94a3b8",2.2);
+    if(!wasGround&&og)burst(PLX,GROUND,8,"#0fb99a",2);
+    wasGround=og;
+    if(game.crashes!==lastCrashes){lastCrashes=game.crashes;burst(PLX,GROUND-20,36,"#ef4466",5);shake=14;rot=0}
+    scroll+=12;
+    drawGame();drawBrain();
+  }
+
+  async function loop(){
+    if(running)return;running=true;
+    while(true){
+      if(manual||!connected){
+        game.step();last.jump=false;last.danger=0;last.spk=[];ui();
+        await new Promise(r=>setTimeout(r,33));
+      }else{
+        const t0=performance.now();
+        try{
+          const {r}=await brainFrame(game);
+          last=r;histD.push(r.danger);histG.push(r.gf_spikes);histJ.push(r.jump?1:0);
+          if(histD.length>240){histD.shift();histG.shift();histJ.shift()}
+          $("rtt").textContent=Math.round(performance.now()-t0)+" ms";$("tot").textContent=r.neurons;
+          tFrames++;const el=(performance.now()-tStart)/1000;if(el>1){$("fps").textContent=(tFrames/el).toFixed(1)+" f/s";tFrames=0;tStart=performance.now()}
+          ui();
+        }catch(e){connected=false;setStatus("Connection lost: "+e.message+" · back to manual","bad");manual=true;
+          $("mode").textContent="Mode: MANUAL";$("mode").classList.remove("on")}
+      }
+    }
+  }
+
+  $("connect").onclick=async()=>{
+    api.base=$("url").value.trim().replace(/\/+$/,"");
+    if(!api.base){setStatus("Paste the URL first","bad");return}
+    setStatus("Connecting…","wait");
+    try{const i=await api.get("/info");layout(i.sample_types);connected=true;
+      setStatus(`Connected · ${i.neurons} neurons · ${i.links} links · ${i.dataset}`,"ok");$("tot").textContent=i.neurons;
+      manual=false;$("mode").textContent="Mode: BRAIN";$("mode").classList.add("on")}
+    catch(e){connected=false;setStatus("Cannot reach API ("+e.message+") · check URL and that Colab is running","bad")}
+  };
+  $("url").addEventListener("keydown",e=>{if(e.key==="Enter")$("connect").click()});
+  $("mode").onclick=()=>{ if(!connected){setStatus("Connect to the API first","bad");return}
+    manual=!manual;$("mode").textContent="Mode: "+(manual?"MANUAL":"BRAIN");$("mode").classList.toggle("on",!manual)};
+  $("rst").onclick=()=>{game.passed=0;game.crashes=0;lastCrashes=0};
+  $("fs").onclick=()=>{try{document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen()}catch(e){}};
+  const mj=()=>{if(manual)game.jump()};
+  addEventListener("keydown",e=>{if(e.code==="Space"&&e.target.tagName!=="INPUT"){e.preventDefault();mj()}});
+  $("game").addEventListener("pointerdown",mj);
+  loop();
+}
+</script></body></html>
